@@ -58,5 +58,5 @@ export const BIRD_LABELS = [
   "Tourterelle des bois",
   "Tourterelle turque",
   "Troglodyte mignon",
-  "Verdier d'Europe",
+  "Verdier d'Europe"
 ];
