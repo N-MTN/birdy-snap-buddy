@@ -22,8 +22,8 @@ export default function Gallery() {
       {/* Header */}
       <div className="safe-area-top bg-primary">
         <div className="flex items-center gap-3 px-5 py-4">
-          <img src={logoImg} alt="BirdSnap" className="w-8 h-8" width={32} height={32} />
-          <h1 className="text-xl font-bold text-primary-foreground">BirdSnap</h1>
+          <img src={logoImg} alt="BirdAround" className="w-8 h-8" width={32} height={32} />
+          <h1 className="text-xl font-bold text-primary-foreground">BirdAround</h1>
         </div>
       </div>
 
