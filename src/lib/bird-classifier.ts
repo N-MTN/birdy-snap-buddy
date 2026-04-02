@@ -7,9 +7,14 @@ let session: ort.InferenceSession | null = null;
 
 async function getSession(): Promise<ort.InferenceSession> {
   if (!session) {
-    session = await ort.InferenceSession.create("/models/modele_oiseaux_v3.onnx", {
-      executionProviders: ["wasm"],
-    });
+    try {
+      session = await ort.InferenceSession.create("/models/modele_oiseaux_v3.onnx", {
+        executionProviders: ["wasm"],
+      });
+    } catch (e) {
+      console.error("Failed to load ONNX session:", e);
+      throw e;
+    }
   }
   return session;
 }
@@ -26,7 +31,7 @@ async function loadImageSource(file: File): Promise<ImageBitmap | HTMLImageEleme
     try {
       return await createImageBitmap(file, { imageOrientation: "from-image" });
     } catch {
-      // Fallback below for browsers with partial support.
+      // Fallback for older browsers
     }
   }
 
@@ -54,15 +59,14 @@ async function preprocessImage(file: File): Promise<ort.Tensor> {
     canvas.height = 224;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) {
-      throw new Error("Canvas context unavailable");
-    }
+    if (!ctx) throw new Error("Canvas context unavailable");
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(source, 0, 0, 224, 224);
 
     const { data } = ctx.getImageData(0, 0, 224, 224);
+
     const mean = [0.485, 0.456, 0.406];
     const std = [0.229, 0.224, 0.225];
     const channelSize = 224 * 224;
@@ -90,15 +94,19 @@ export interface ClassificationResult {
 export async function classifyBird(file: File): Promise<ClassificationResult[]> {
   const sess = await getSession();
   const inputTensor = await preprocessImage(file);
+
   const results = await sess.run({ input: inputTensor });
-  const output = results.output.data as Float32Array;
+
+  const outputName = sess.outputNames[0];
+  const output = results[outputName].data as Float32Array;
+
   const probs = softmax(output);
 
   const indexed = Array.from(probs).map((val, idx) => ({ idx, val }));
   indexed.sort((a, b) => b.val - a.val);
 
-  return indexed.slice(0, 2).map((item) => ({
-    label: BIRD_LABELS[item.idx],
+  return indexed.slice(0, 3).map((item) => ({
+    label: (BIRD_LABELS[item.idx] || `Unknown (${item.idx})`).replace(/_/g, " "),
     confidence: item.val,
   }));
 }
