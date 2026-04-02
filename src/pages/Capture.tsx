@@ -1,10 +1,13 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Check, RotateCcw, ArrowLeft } from "lucide-react";
+import { Camera, Check, RotateCcw, ArrowLeft, Bird, Loader2 } from "lucide-react";
 import { addSighting, generateId } from "@/lib/bird-store";
+import { classifyBird } from "@/lib/bird-classifier";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "@/hooks/use-toast";
 
 export default function Capture() {
   const navigate = useNavigate();
@@ -12,18 +15,50 @@ export default function Capture() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
+  const [isIdentifying, setIsIdentifying] = useState(false);
+  const [confidence, setConfidence] = useState<number | null>(null);
 
   const handleCapture = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setPhoto(reader.result as string);
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setPhoto(dataUrl);
+      setIsIdentifying(true);
+      setConfidence(null);
+
+      try {
+        const result = await classifyBird(dataUrl);
+        if (result.label === "Pas un oiseau") {
+          setName("");
+          setConfidence(result.confidence);
+          toast({
+            title: "Aucun oiseau détecté",
+            description: "L'image ne semble pas contenir un oiseau. Vous pouvez entrer le nom manuellement.",
+          });
+        } else {
+          setName(result.label);
+          setConfidence(result.confidence);
+          toast({
+            title: "Oiseau identifié !",
+            description: `${result.label} (${(result.confidence * 100).toFixed(1)}% confiance)`,
+          });
+        }
+      } catch (err) {
+        console.error("Classification failed:", err);
+        toast({
+          title: "Erreur d'identification",
+          description: "Impossible d'identifier l'oiseau. Entrez le nom manuellement.",
+        });
+      } finally {
+        setIsIdentifying(false);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -33,7 +68,7 @@ export default function Capture() {
     addSighting({
       id: generateId(),
       photo,
-      name: name.trim() || "Unknown Bird",
+      name: name.trim() || "Oiseau inconnu",
       notes: notes.trim(),
       date: new Date().toISOString(),
     });
@@ -44,6 +79,7 @@ export default function Capture() {
     setPhoto(null);
     setName("");
     setNotes("");
+    setConfidence(null);
   };
 
   return (
@@ -54,7 +90,7 @@ export default function Capture() {
           <button onClick={() => navigate("/")} className="text-primary-foreground">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold text-primary-foreground">Capture Bird</h1>
+          <h1 className="text-xl font-bold text-primary-foreground">Capturer un oiseau</h1>
         </div>
       </div>
 
@@ -76,13 +112,13 @@ export default function Capture() {
             <Camera className="w-14 h-14 text-primary-foreground" />
           </button>
           <p className="text-muted-foreground mt-6 text-center">
-            Tap to take a photo or choose from gallery
+            Prenez une photo ou choisissez dans la galerie
           </p>
         </div>
       ) : (
         <div className="p-4 space-y-4">
           <div className="relative rounded-xl overflow-hidden">
-            <img src={photo} alt="Captured bird" className="w-full aspect-square object-cover" />
+            <img src={photo} alt="Photo capturée" className="w-full aspect-square object-cover" />
             <button
               onClick={handleRetake}
               className="absolute top-3 right-3 bg-card/80 backdrop-blur-sm p-2 rounded-full"
@@ -91,15 +127,40 @@ export default function Capture() {
             </button>
           </div>
 
+          {/* AI identification status */}
+          {isIdentifying && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              <span className="text-sm text-primary font-medium">Identification en cours…</span>
+            </div>
+          )}
+
+          {confidence !== null && !isIdentifying && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent border border-border">
+              <Bird className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {name || "Pas un oiseau"}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Progress value={confidence * 100} className="h-2 flex-1" />
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {(confidence * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <Input
-              placeholder="Bird name (e.g., Blue Jay)"
+              placeholder="Nom de l'oiseau (ex: Merle noir)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-card"
             />
             <Textarea
-              placeholder="Notes (location, behavior...)"
+              placeholder="Notes (lieu, comportement…)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
@@ -107,9 +168,9 @@ export default function Capture() {
             />
           </div>
 
-          <Button onClick={handleSave} className="w-full h-12 text-base gap-2">
+          <Button onClick={handleSave} disabled={isIdentifying} className="w-full h-12 text-base gap-2">
             <Check className="w-5 h-5" />
-            Save Sighting
+            Enregistrer l'observation
           </Button>
         </div>
       )}
