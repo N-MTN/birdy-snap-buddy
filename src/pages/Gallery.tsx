@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Bird } from "lucide-react";
 import { getSightings, deleteSighting, type BirdSighting } from "@/lib/bird-store";
 import BirdCard from "@/components/BirdCard";
-import heroImg from "@/assets/hero-birds.jpg";
+import heroImg from "@/assets/hero-birds.png";
 import logoImg from "@/assets/bird-logo.png";
 
 export default function Gallery() {
