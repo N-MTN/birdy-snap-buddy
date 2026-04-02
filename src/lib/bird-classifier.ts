@@ -103,7 +103,7 @@ export async function classifyBird(file: File): Promise<ClassificationResult[]> 
 
     // Map probabilities to labels [cite: 23, 24]
     const predictionMap = Array.from(probabilities).map((prob, index) => ({
-      label: BIRD_LABELS[index] || `Unknown (${index})`,
+      label: BIRD_LABELS[index - 1] || `Unknown (${index})`,
       confidence: prob,
     }));
 
