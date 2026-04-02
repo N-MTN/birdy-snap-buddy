@@ -1,4 +1,5 @@
 export const BIRD_LABELS = [
+  "Accenteur mouchet",
   "Aigrette garzette",
   "Alouette des champs",
   "Bihoreau gris",
