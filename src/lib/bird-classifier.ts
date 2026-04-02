@@ -1,7 +1,6 @@
 import * as ort from "onnxruntime-web";
 import { BIRD_LABELS } from "./bird-labels";
 
-// Configure ONNX Runtime to use WASM backend
 ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
 
 let session: ort.InferenceSession | null = null;
@@ -22,49 +21,65 @@ function softmax(arr: Float32Array): Float32Array {
   return exps.map((v) => v / sum) as Float32Array;
 }
 
-/**
- * Preprocess a base64 data URL image to a [1, 3, 224, 224] float tensor.
- * Uses ImageNet normalization: mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
- */
-async function preprocessImage(dataUrl: string): Promise<ort.Tensor> {
+async function loadImageSource(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      // Fallback below for browsers with partial support.
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 224;
-      canvas.height = 224;
-      const ctx = canvas.getContext("2d")!;
-
-      // Center crop: take the largest square from center, then resize
-      const size = Math.min(img.width, img.height);
-      const sx = (img.width - size) / 2;
-      const sy = (img.height - size) / 2;
-      ctx.drawImage(img, sx, sy, size, size, 0, 0, 224, 224);
-
-      const imageData = ctx.getImageData(0, 0, 224, 224);
-      const { data } = imageData;
-
-      // ImageNet normalization
-      const mean = [0.485, 0.456, 0.406];
-      const std = [0.229, 0.224, 0.225];
-
-      const float32 = new Float32Array(1 * 3 * 224 * 224);
-      for (let y = 0; y < 224; y++) {
-        for (let x = 0; x < 224; x++) {
-          const idx = (y * 224 + x) * 4;
-          for (let c = 0; c < 3; c++) {
-            float32[c * 224 * 224 + y * 224 + x] =
-              (data[idx + c] / 255 - mean[c]) / std[c];
-          }
-        }
-      }
-
-      resolve(new ort.Tensor("float32", float32, [1, 3, 224, 224]));
+      URL.revokeObjectURL(objectUrl);
+      resolve(img);
     };
-    img.onerror = reject;
-    img.src = dataUrl;
+    img.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
+    img.src = objectUrl;
   });
+}
+
+async function preprocessImage(file: File): Promise<ort.Tensor> {
+  const source = await loadImageSource(file);
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 224;
+    canvas.height = 224;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      throw new Error("Canvas context unavailable");
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, 0, 0, 224, 224);
+
+    const { data } = ctx.getImageData(0, 0, 224, 224);
+    const mean = [0.485, 0.456, 0.406];
+    const std = [0.229, 0.224, 0.225];
+    const channelSize = 224 * 224;
+    const float32 = new Float32Array(3 * channelSize);
+
+    for (let i = 0, pixelIndex = 0; i < data.length; i += 4, pixelIndex++) {
+      float32[pixelIndex] = (data[i] / 255 - mean[0]) / std[0];
+      float32[channelSize + pixelIndex] = (data[i + 1] / 255 - mean[1]) / std[1];
+      float32[channelSize * 2 + pixelIndex] = (data[i + 2] / 255 - mean[2]) / std[2];
+    }
+
+    return new ort.Tensor("float32", float32, [1, 3, 224, 224]);
+  } finally {
+    if (source instanceof ImageBitmap) {
+      source.close();
+    }
+  }
 }
 
 export interface ClassificationResult {
@@ -72,14 +87,13 @@ export interface ClassificationResult {
   confidence: number;
 }
 
-export async function classifyBird(imageDataUrl: string): Promise<ClassificationResult[]> {
+export async function classifyBird(file: File): Promise<ClassificationResult[]> {
   const sess = await getSession();
-  const inputTensor = await preprocessImage(imageDataUrl);
+  const inputTensor = await preprocessImage(file);
   const results = await sess.run({ input: inputTensor });
   const output = results.output.data as Float32Array;
   const probs = softmax(output);
 
-  // Get top 2 results
   const indexed = Array.from(probs).map((val, idx) => ({ idx, val }));
   indexed.sort((a, b) => b.val - a.val);
 

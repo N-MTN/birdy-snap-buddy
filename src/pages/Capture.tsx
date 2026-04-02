@@ -35,7 +35,7 @@ export default function Capture() {
       setResults([]);
 
       try {
-        const top2 = await classifyBird(dataUrl);
+        const top2 = await classifyBird(file);
         setResults(top2);
 
         if (top2[0].label === "Pas un oiseau") {
