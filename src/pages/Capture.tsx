@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, Check, RotateCcw, ArrowLeft, Bird, Loader2 } from "lucide-react";
 import { addSighting, generateId } from "@/lib/bird-store";
-import { classifyBird } from "@/lib/bird-classifier";
+import { classifyBird, type ClassificationResult } from "@/lib/bird-classifier";
+import { addPoints } from "@/lib/points-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +17,7 @@ export default function Capture() {
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
   const [isIdentifying, setIsIdentifying] = useState(false);
-  const [confidence, setConfidence] = useState<number | null>(null);
+  const [results, setResults] = useState<ClassificationResult[]>([]);
 
   const handleCapture = () => {
     fileInputRef.current?.click();
@@ -31,23 +32,24 @@ export default function Capture() {
       const dataUrl = reader.result as string;
       setPhoto(dataUrl);
       setIsIdentifying(true);
-      setConfidence(null);
+      setResults([]);
 
       try {
-        const result = await classifyBird(dataUrl);
-        if (result.label === "Pas un oiseau") {
+        const top2 = await classifyBird(dataUrl);
+        setResults(top2);
+
+        if (top2[0].label === "Pas un oiseau") {
           setName("");
-          setConfidence(result.confidence);
           toast({
             title: "Aucun oiseau détecté",
             description: "L'image ne semble pas contenir un oiseau. Vous pouvez entrer le nom manuellement.",
           });
         } else {
-          setName(result.label);
-          setConfidence(result.confidence);
+          setName(top2[0].label);
+          addPoints(10);
           toast({
-            title: "Oiseau identifié !",
-            description: `${result.label} (${(result.confidence * 100).toFixed(1)}% confiance)`,
+            title: "Oiseau identifié ! +10 🐦",
+            description: `${top2[0].label} (${(top2[0].confidence * 100).toFixed(1)}%)`,
           });
         }
       } catch (err) {
@@ -61,6 +63,10 @@ export default function Capture() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSelectResult = (label: string) => {
+    setName(label);
   };
 
   const handleSave = () => {
@@ -79,7 +85,7 @@ export default function Capture() {
     setPhoto(null);
     setName("");
     setNotes("");
-    setConfidence(null);
+    setResults([]);
   };
 
   return (
@@ -135,20 +141,33 @@ export default function Capture() {
             </div>
           )}
 
-          {confidence !== null && !isIdentifying && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent border border-border">
-              <Bird className="w-5 h-5 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {name || "Pas un oiseau"}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Progress value={confidence * 100} className="h-2 flex-1" />
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {(confidence * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
+          {/* Top 2 results */}
+          {results.length > 0 && !isIdentifying && (
+            <div className="space-y-2">
+              {results.map((r, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSelectResult(r.label)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                    name === r.label
+                      ? "bg-primary/10 border-primary"
+                      : "bg-accent border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Bird className="w-5 h-5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {i === 0 ? "🥇 " : "🥈 "}{r.label}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Progress value={r.confidence * 100} className="h-2 flex-1" />
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {(r.confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
 
