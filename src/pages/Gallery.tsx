@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { Bird } from "lucide-react";
 import { getSightings, deleteSighting, type BirdSighting } from "@/lib/bird-store";
+import { getPoints } from "@/lib/points-store";
 import BirdCard from "@/components/BirdCard";
 import heroImg from "@/assets/hero-birds.png";
 import logoImg from "@/assets/bird-logo.png";
 
 export default function Gallery() {
   const [birds, setBirds] = useState<BirdSighting[]>([]);
+  const [points, setPoints] = useState(0);
 
   useEffect(() => {
     setBirds(getSightings());
+    setPoints(getPoints());
   }, []);
 
   const handleDelete = (id: string) => {
@@ -24,6 +27,10 @@ export default function Gallery() {
         <div className="flex items-center gap-3 px-5 py-4">
           <img src={logoImg} alt="BirdAround" className="w-8 h-8" width={32} height={32} />
           <h1 className="text-xl font-bold text-primary-foreground">BirdAround</h1>
+          <div className="ml-auto flex items-center gap-1 bg-primary-foreground/20 rounded-full px-3 py-1">
+            <span className="text-sm font-bold text-primary-foreground">{points}</span>
+            <Bird className="w-4 h-4 text-primary-foreground" />
+          </div>
         </div>
       </div>
 
