@@ -72,24 +72,19 @@ export interface ClassificationResult {
   confidence: number;
 }
 
-export async function classifyBird(imageDataUrl: string): Promise<ClassificationResult> {
+export async function classifyBird(imageDataUrl: string): Promise<ClassificationResult[]> {
   const sess = await getSession();
   const inputTensor = await preprocessImage(imageDataUrl);
   const results = await sess.run({ input: inputTensor });
   const output = results.output.data as Float32Array;
   const probs = softmax(output);
 
-  let maxIdx = 0;
-  let maxVal = probs[0];
-  for (let i = 1; i < probs.length; i++) {
-    if (probs[i] > maxVal) {
-      maxVal = probs[i];
-      maxIdx = i;
-    }
-  }
+  // Get top 2 results
+  const indexed = Array.from(probs).map((val, idx) => ({ idx, val }));
+  indexed.sort((a, b) => b.val - a.val);
 
-  return {
-    label: BIRD_LABELS[maxIdx],
-    confidence: maxVal,
-  };
+  return indexed.slice(0, 2).map((item) => ({
+    label: BIRD_LABELS[item.idx],
+    confidence: item.val,
+  }));
 }
