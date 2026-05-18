@@ -13,7 +13,7 @@ async function getSession(): Promise<ort.InferenceSession> {
   if (!session) {
     try {
       // Ensure the model is located in your 'public/models' directory
-      session = await ort.InferenceSession.create("/models/modele_oiseaux_v3.onnx", {
+      session = await ort.InferenceSession.create("/models/modele_oiseaux_v5.onnx", {
         executionProviders: ["wasm"],
         graphOptimizationLevel: "all",
       });
@@ -103,7 +103,7 @@ export async function classifyBird(file: File): Promise<ClassificationResult[]> 
 
     // Map probabilities to labels [cite: 23, 24]
     const predictionMap = Array.from(probabilities).map((prob, index) => ({
-      label: BIRD_LABELS[index - 1] || `Unknown (${index})`,
+      label: BIRD_LABELS[index] || `Unknown (${index})`,
       confidence: prob,
     }));
 
