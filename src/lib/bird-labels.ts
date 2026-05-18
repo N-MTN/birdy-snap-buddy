@@ -1,1 +1,22 @@
-export const BIRD_LABELS = ["Accenteur mouchet", "Aigrette garzette", "Alouette des champs", "Bihoreau gris", "Bruant jaune", "Buse variable", "Canard colvert", "Chardonneret elegant", "Choucas des tours", "Chouette hulotte", "Corbeau freux", "Corneille mantelee", "Corneille noire", "Cygne tubercule", "Epervier d Europe", "Etourneau sansonnet", "Faucon crecerelle", "Fauvette a tete noire", "Fauvette grisette", "Foulque macroule", "Gallinule poule d eau", "Geai des chenes", "Goeland argente", "Grand corbeau", "Grand cormoran", "Grande aigrette", "Grebe castagneux", "Grebe huppe", "Grimpereau des jardins", "Grive draine", "Grive mauvis", "Grive musicienne", "Heron cendre", "Hibou moyen duc", "Linotte melodieuse", "Martin pecheur", "Merle noir", "Mesange bleue", "Mesange boreale", "Mesange charbonniere", "Mesange huppee", "Mesange noire", "Mesange nonnette", "Moineau domestique", "Moineau friquet", "Mouette rieuse", "Pas un oiseau", "Pic epeiche", "Pic vert", "Pie bavarde", "Pigeon biset", "Pigeon colombin", "Pigeon ramier", "Pinson des arbres", "Rougegorge familier", "Sittelle torchepot", "Tourterelle des bois", "Tourterelle turque", "Troglodyte mignon", "Verdier d Europe"];
+export const BIRD_LABELS = [
+  "Accenteur_mouchet", "Aigrette_garzette", "Alouette_des_champs", "Alouette_lulu", "Autour_des_palombes",
+  "Bernache_du_Canada", "Bihoreau_gris", "Blongios_nain", "Bruant_jaune", "Bruant_proyer", "Bruant_zizi",
+  "Busard_Saint_Martin", "Busard_cendre", "Buse_variable", "Caille_des_bles", "Canard_chipeau", "Canard_colvert",
+  "Canard_souchet", "Chardonneret_elegant", "Cheveche_dAthena", "Choucas_des_tours", "Chouette_hulotte",
+  "Cigogne_noire", "Corbeau_freux", "Corneille_mantelee", "Corneille_noire", "Coucou_gris", "Cygne_tubercule",
+  "Effraie_des_clochers", "Engoulevent_dEurope", "Epervier_d_Europe", "Etourneau_sansonnet", "Faisan_de_Colchide",
+  "Faucon_crecerelle", "Faucon_hobereau", "Faucon_pelerin", "Fauvette_a_tete_noire", "Fauvette_des_jardins",
+  "Fauvette_grisette", "Foulque_macroule", "Fuligule_milouin", "Fuligule_morillon", "Gallinule_poule_d_eau",
+  "Geai_des_chenes", "Goeland_argente", "Grand_corbeau", "Grand_cormoran", "Grande_aigrette", "Grebe_castagneux",
+  "Grebe_huppe", "Grimpereau_des_jardins", "Grive_draine", "Grive_litorne", "Grive_mauvis", "Grive_musicienne",
+  "Heron_cendre", "Heron_pourpre", "Hibou_des_marais", "Hibou_moyen_duc", "Hirondelle_de_cheminee",
+  "Hirondelle_de_fenetre", "Linotte_melodieuse", "Loriot_dEurope", "Martin_pecheur_dEurope", "Martinet_noir",
+  "Merle_noir", "Mesange_a_longue_queue", "Mesange_bleue", "Mesange_boreale", "Mesange_charbonniere",
+  "Mesange_huppee", "Mesange_noire", "Mesange_nonnette", "Moineau_domestique", "Moineau_friquet",
+  "Mouette_rieuse", "Oedicneme_criard", "Ouette_dEgypte", "Pas_un_oiseau", "Perdrix_grise", "Perdrix_rouge",
+  "Perruche_a_collier", "Pic_epeiche", "Pic_vert", "Pie_bavarde", "Pigeon_biset", "Pigeon_colombin",
+  "Pigeon_ramier", "Pinson_des_arbres", "Pinson_du_Nord", "Pluvier_dore", "Pouillot_fitis", "Pouillot_siffleur",
+  "Roitelet_a_triple_bandeau", "Rossignol_philomele", "Rougegorge_familier", "Rougequeue_noir", "Sarcelle_dhiver",
+  "Sittelle_torchepot", "Tarier_des_pres", "Tarier_patre", "Tarin_des_aulnes", "Tourterelle_des_bois",
+  "Tourterelle_turque", "Troglodyte_mignon", "Verdier_d_Europe"
+];
