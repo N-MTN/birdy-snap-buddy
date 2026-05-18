@@ -40,41 +40,35 @@ function softmax(logits: Float32Array): Float32Array {
  * Replicates the PIL.resize(LANCZOS) and ImageNet normalization from Python.
  */
 async function preprocess(file: File): Promise<ort.Tensor> {
+  const SIZE = 320;
   const img = await createImageBitmap(file);
   const canvas = document.createElement("canvas");
-  canvas.width = 224;
-  canvas.height = 224;
-  
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas context missing");
 
-  // High quality interpolation [cite: 12]
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high"; 
-  ctx.drawImage(img, 0, 0, 224, 224);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, SIZE, SIZE);
 
-  const imageData = ctx.getImageData(0, 0, 224, 224).data;
-  const channelSize = 224 * 224;
+  const imageData = ctx.getImageData(0, 0, SIZE, SIZE).data;
+  const channelSize = SIZE * SIZE;
   const output = new Float32Array(3 * channelSize);
 
-  // ImageNet Stats [cite: 14]
   const mean = [0.485, 0.456, 0.406];
   const std = [0.229, 0.224, 0.225];
 
-  /**
-   * Converting HWC (RGBA) from Canvas to CHW (RGB) for ONNX [cite: 15, 16, 17]
-   * i iterates by 4 (R, G, B, A)
-   * j tracks the pixel position (0 to 50175)
-   */
   for (let i = 0; i < imageData.length; i += 4) {
     const j = i / 4;
-    output[j] = (imageData[i] / 255 - mean[0]) / std[0];               // Red Channel
-    output[channelSize + j] = (imageData[i + 1] / 255 - mean[1]) / std[1]; // Green Channel
-    output[2 * channelSize + j] = (imageData[i + 2] / 255 - mean[2]) / std[2]; // Blue Channel
+    output[j] = (imageData[i] / 255 - mean[0]) / std[0];
+    output[channelSize + j] = (imageData[i + 1] / 255 - mean[1]) / std[1];
+    output[2 * channelSize + j] = (imageData[i + 2] / 255 - mean[2]) / std[2];
   }
 
   img.close();
-  return new ort.Tensor("float32", output, [1, 3, 224, 224]); // [cite: 18]
+  return new ort.Tensor("float32", output, [1, 3, SIZE, SIZE]);
 }
 
 export interface ClassificationResult {
